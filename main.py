@@ -17,7 +17,7 @@ class VehiculoDetector:
     Clase que encapsula la lógica de conteo vehicular, detección de placas y reconocimiento OCR.
     """
 
-    def _init_(self,
+    def __init__(self,
                  video_path: str,
                  output_path: str = "video_anotado.mp4",
                  placa_model_path: str = "runs/detect/Localizacion placa colombiana yolov8n/weights/best.pt",
