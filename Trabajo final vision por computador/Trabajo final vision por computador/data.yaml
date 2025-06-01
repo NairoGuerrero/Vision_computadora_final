@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['placa']
+
+roboflow:
+  workspace: juan-felipe-orozco-cortes
+  project: proyecto-placas
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/juan-felipe-orozco-cortes/proyecto-placas/dataset/1
