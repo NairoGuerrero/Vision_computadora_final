@@ -66,3 +66,69 @@ class PlacaProcessor:
                 plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
             plt.axis("off")
             plt.show()
+
+
+    def detectar_y_corregir_placa(self, img: np.ndarray,
+                                   width: int = 1280, height: int = 641) -> tuple[np.ndarray | None, np.ndarray | None]:
+        """
+        Detecta la región de una placa en la imagen y corrige su perspectiva.
+
+        Args:
+            img (np.ndarray): Imagen original BGR.
+            width (int): Ancho deseado de la imagen corregida.
+            height (int): Alto deseado de la imagen corregida.
+
+        Returns:
+            tuple: Imagen de la placa corregida y versión en escala de grises.
+        """
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        # Umbral para color amarillo típico de placas
+        lower_yellow = np.array([15, 80, 80])
+        upper_yellow = np.array([35, 255, 255])
+        mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
+
+        # Limpieza morfológica de la máscara
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+        mask_clean = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        self.mostrar(mask_clean, "Máscara Amarilla", cmap='gray')
+
+        # Detección de contornos
+        contours = imutils.grab_contours(
+            cv2.findContours(mask_clean, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        )
+        contours = sorted(contours, key=cv2.contourArea, reverse=True)[:10]
+        location = None
+
+        for c in contours:
+            approx = cv2.approxPolyDP(c, 0.02 * cv2.arcLength(c, True), True)
+            x, y, w, h = cv2.boundingRect(approx)
+            area = cv2.contourArea(c)
+            aspect_ratio = w / float(h)
+            rectangularidad = area / float(w * h)
+
+            if rectangularidad >= 0.7 and len(approx) == 4 and 1.5 <= aspect_ratio <= 3.0:
+                location = approx
+                break
+
+        if location is None:
+            print("❌ No se encontró una placa.")
+            return None, None
+
+        # Transformación de perspectiva
+        pts_src = self.ordenar_puntos(location.astype(np.int32))
+        pts_dst = np.array([
+            [0, 0],
+            [width - 1, 0],
+            [width - 1, height - 1],
+            [0, height - 1]
+        ], dtype="float32")
+
+        M = cv2.getPerspectiveTransform(pts_src, pts_dst)
+        warped = cv2.warpPerspective(img, M, (width, height))
+        self.mostrar(warped, "Placa Corregida")
+
+        return warped, gray
+
+    
