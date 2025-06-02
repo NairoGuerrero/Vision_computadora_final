@@ -131,4 +131,50 @@ class PlacaProcessor:
 
         return warped, gray
 
-    
+
+    def segmentar_caracteres(self, warped: np.ndarray) -> list[np.ndarray]:
+        """
+        Segmenta los caracteres de una imagen de placa ya corregida.
+
+        Args:
+            warped (np.ndarray): Imagen corregida (output de detectar_y_corregir_placa).
+
+        Returns:
+            list[np.ndarray]: Lista de imágenes de caracteres redimensionados.
+        """
+        gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
+        _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+        self.mostrar(thresh, "Binarización", cmap='gray')
+
+        contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+        char_boxes = []
+        for cnt in contours:
+            x, y, w, h = cv2.boundingRect(cnt)
+            # Filtro basado en tamaño aproximado de caracteres
+            if 100 <= w <= 250 and 300 <= h <= 400:
+                char_boxes.append((x, y, w, h))
+                cv2.rectangle(warped, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+        # Ordenar de izquierda a derecha
+        char_boxes = sorted(char_boxes, key=lambda b: b[0])
+        matricula = []
+
+        for i, (x, y, w, h) in enumerate(char_boxes):
+            char = thresh[max(0, y-5):y+h+10, max(0, x-5):x+w+10]
+            resized = cv2.resize(char, (self.img_size, self.img_size))
+            matricula.append(resized)
+
+        # Mostrar resultados si está activado el modo debug
+        if self.debug:
+            plt.figure(figsize=(12, 3))
+            for i, char_img in enumerate(matricula):
+                plt.subplot(1, len(matricula), i+1)
+                plt.imshow(char_img, cmap='gray')
+                plt.title(f"Char {i+1}")
+                plt.axis("off")
+            plt.suptitle("Caracteres Recortados")
+            plt.show()
+
+        return matricula
