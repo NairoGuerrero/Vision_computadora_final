@@ -1,7 +1,7 @@
 """
 
 Clase OCRRecognizer: realiza reconocimiento de caracteres (OCR) en imágenes individuales
-usando un modelo entrenado con Keras (por ejemplo, CNN entrenado sobre Chars74K o similar).
+usando un modelo entrenado con Keras basado en AlexNet.
 
 
 """
